@@ -13,7 +13,12 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 from werkzeug.security import check_password_hash
 from config import Config
 import uvicorn
-
+from sqlalchemy import (
+    Column, String, Boolean, Time, TIMESTAMP, ForeignKey
+)
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 # -------------------- Database Setup --------------------
 DATABASE_URL = Config.DATABASE_URL
 engine = create_engine(DATABASE_URL)
@@ -69,6 +74,8 @@ class InjustifyUser(Base):
     updated_at = Column(TIMESTAMP, server_default="CURRENT_TIMESTAMP", onupdate="CURRENT_TIMESTAMP", nullable=True)
     status = Column(Enum("active", "inactive"), default="active", nullable=True)
     last_login = Column(TIMESTAMP, nullable=True)
+    notification_setting = relationship("NotificationSetting", back_populates="user", uselist=False)
+
 
 class InjustifyMusic(Base):
     __tablename__ = "injustifymusic"
@@ -111,6 +118,50 @@ class VerificationSession(Base):
 
 
 
+
+
+class NotificationSetting(Base):
+    __tablename__ = "notification_settings"
+
+    # Primary key is id, not user_id
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+
+    user_id = Column(String(36), ForeignKey("injustifyusers.id", ondelete="CASCADE"), nullable=False)
+    user = relationship("InjustifyUser", back_populates="notification_setting", uselist=False)
+
+
+    # Notification toggles
+    enable_sound_alerts = Column(Boolean, default=False)
+    selected_sound = Column(String(100), nullable=True)
+    do_not_disturb = Column(Boolean, default=False)
+
+    # DND Schedule
+    dnd_start_time = Column(Time, nullable=True)
+    dnd_end_time = Column(Time, nullable=True)
+
+    # DND Exceptions
+    dnd_allow_calls = Column(Boolean, default=False)
+    dnd_allow_messages = Column(Boolean, default=False)
+    dnd_allow_urgent = Column(Boolean, default=False)
+
+    # Email Notifications
+    email_newsignin = Column(Boolean, default=True)
+    email_newfeatures = Column(Boolean, default=True)
+    email_newgifts = Column(Boolean, default=True)
+    email_weeklyreport = Column(Boolean, default=True)
+
+    # Device Notifications
+    device_allnotifications = Column(Boolean, default=True)
+    device_newlikes = Column(Boolean, default=True)
+    device_newcomments = Column(Boolean, default=True)
+    device_onlynewnoty = Column(Boolean, default=True)
+
+    # Timestamps
+    created_at = Column(TIMESTAMP, server_default=func.now())
+    updated_at = Column(TIMESTAMP, onupdate=func.now(), server_default=func.now())
+
+    # Optional: if you want backref to user
+    # user = relationship("InjustifyUser", back_populates="notification_settings", uselist=False)
 
 
 
@@ -217,6 +268,27 @@ class VerificationSessionView(ModelView, model=VerificationSession):
     column_default_sort = (VerificationSession.expires_at, False)
     category = "Users"
 
+
+class NotificationSettingView(ModelView, model=NotificationSetting):
+    column_list = [
+        NotificationSetting.user_id,
+        # "username",  # This is our custom property
+    ]
+
+    # column_sortable_list = [NotificationSetting.user_id]
+    # column_searchable_list = [NotificationSetting.user_id]
+    # category = "Settings"
+
+    # def _username_formatter(self, obj):
+    #     return obj.user.name if obj.user else "—"
+
+    # column_formatters = {
+    #     "username": _username_formatter
+    # }
+
+
+
+
 # -------------------- Register Views --------------------
 admin.add_view(AdminUserView)
 admin.add_view(ViewModelView)
@@ -226,6 +298,7 @@ admin.add_view(InjustifyMusicView)
 admin.add_view(PlaylistView)
 admin.add_view(PlaylistSongView)
 admin.add_view(VerificationSessionView)
+admin.add_view(NotificationSettingView)
 
 
 # -------------------- Routes --------------------

@@ -356,4 +356,73 @@ async def delete_user(userId, password):
 
 
 
-                
+async def handle_notifications_settings(userId, notifications):
+    print('NOTIFICATION SETTINGS:', notifications)
+
+    conn = await Config.get_db_connection()
+
+    if not userId:
+        return {"success": False, "message": "User ID is required."}
+
+    try:
+        async with conn.cursor() as cursor:
+            fields = []
+            values = []
+
+            def append_field(key, column=None):
+                if column is None:
+                    column = key
+                if key in notifications:
+                    fields.append(f"{column} = %s")
+                    values.append(notifications[key])
+
+            # Flat fields
+            append_field('enableSoundAlerts', 'enable_sound_alerts')
+            append_field('selectedSound', 'selected_sound')
+            append_field('enabledDND', 'do_not_disturb')
+            # append_field('dndStartTime', 'dnd_start_time')
+            # append_field('dndEndTime', 'dnd_end_time')
+            append_field('dnd_start_time', None)
+            append_field('dnd_end_time', None)
+            append_field('dndAllowCalls', 'dnd_allow_calls')
+            append_field('dndAllowMessages', 'dnd_allow_messages')
+            append_field('dndAllowUrgent', 'dnd_allow_urgent')
+
+            # Email notifications
+            for key in ['newSignIn', 'newFeatures', 'newGifts', 'weeklyReport']:
+                append_field(key, f'email_{key.lower()}')
+
+            # Device notifications
+            for key in ['allNotifications', 'newLikes', 'newComments', 'onlyNewNoty']:
+                append_field(key, f'device_{key.lower()}')
+
+            if not fields:
+                return {"success": False, "message": "No notification fields provided to update."}
+
+            columns = ["user_id"] + [field.split(" = ")[0] for field in fields]
+            placeholders = ["%s"] * len(columns)
+            insert_values = [userId] + values
+            update_values = values  # Reuse for ON DUPLICATE KEY
+
+            set_clause = ', '.join(fields)
+
+            query = f"""
+                INSERT INTO notification_settings ({', '.join(columns)})
+                VALUES ({', '.join(placeholders)})
+                ON DUPLICATE KEY UPDATE {set_clause}
+            """
+
+            await cursor.execute(query, insert_values + update_values)
+            await conn.commit()
+
+            return {"success": True, "message": "Notification settings updated successfully 💫."}
+
+    except Exception as e:
+        logging.error(f"Error updating notification settings: {e}")
+        return {"success": False, "message": f"Error updating notification settings: {str(e)}"}
+
+    finally:
+        if conn:
+            await Config.pool.release(conn)
+
+

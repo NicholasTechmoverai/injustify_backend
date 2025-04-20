@@ -7,7 +7,7 @@ from config import Config
 import asyncio
 from utils.globalDb import update_view_count,likeUnlike
 from utils.sp_handler import Search_suggestions_spotify
-from utils.userDb import delete_song_from_downloads
+from utils.userDb import delete_song_from_downloads, handle_notifications_settings
 import json
 
 app = FastAPI()
@@ -176,3 +176,73 @@ class INJUserNamespace(socketio.AsyncNamespace):
                 await self.emit("message", {'message': f"An error occurred: {str(e)}",'type':'error'}, room=sid)
 
 
+   
+
+    async def on_updateNotificationSettings(self, sid, data):
+        try:
+            if not isinstance(data, dict):
+                await self.emit("message", {
+                    'message': f'Invalid data format received: {data}',
+                    'type': 'error'
+                }, room=sid)
+                return
+
+            userId = data.get('userId')
+            enableSoundAlerts = data.get('enableSoundAlerts')
+            selectedSound = data.get('selectedSound')
+            enabledDND = data.get('enableDND')  # Adjusted to match frontend key
+            dndStartTime = data.get('dndStartTime')
+            dndEndTime = data.get('dndEndTime')
+            dndAllowCalls = data.get('dndAllowCalls')
+            dndAllowMessages = data.get('dndAllowMessages')
+            dndAllowUrgent = data.get('dndAllowUrgent')
+
+            # Email Notification Categories
+            emailNotification = {
+                'newSignIn': data.get('newSignIn'),
+                'newFeatures': data.get('newFeatures'),
+                'newGifts': data.get('newGifts'),
+                'weeklyReport': data.get('weeklyReport'),
+            }
+
+            # Device Notification Categories
+            deviceNotification = {
+                'allNotifications': data.get('allNotifications'),
+                'newLikes': data.get('newLikes'),
+                'newComments': data.get('newComments'),
+                'onlyNewNoty': data.get('onlyNewNoty'),
+            }
+
+            # Build structured notification settings object
+            notifications = {
+                'emailNotification': emailNotification,
+                'deviceNotification': deviceNotification,
+                'enableSoundAlerts': enableSoundAlerts,
+                'selectedSound': selectedSound,
+                'enabledDND': enabledDND,
+                'dndStartTime': dndStartTime,
+                'dndEndTime': dndEndTime,
+                'dndAllowCalls': dndAllowCalls,
+                'dndAllowMessages': dndAllowMessages,
+                'dndAllowUrgent': dndAllowUrgent
+            }
+
+            result = await handle_notifications_settings(userId, notifications)
+            if result.get('success'):
+                await self.emit("message", {
+                    'message': result.get('message'),
+                    'type': 'success'
+                }, room=sid)
+            else:
+                await self.emit("message", {
+                    'message': result.get('message'),
+                    'type': 'error'
+                }, room=sid)
+
+        except Exception as e:
+            print(f"Error in on_updateNotificationSettings: {str(e)}")
+            if sid:
+                await self.emit("message", {
+                    'message': f"An error occurred: {str(e)}",
+                    'type': 'error'
+                }, room=sid)
