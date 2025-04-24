@@ -2,9 +2,11 @@ from pytube import Search
 import requests
 import logging
 import os
-
+import asyncio
 logging.basicConfig(level=logging.INFO)
-
+from typing import List, Dict, Union
+from datetime import datetime
+from yt_dlp import YoutubeDL
 api_key = os.getenv("YOUTUBE_API_KEY")
 api_available = True  # Global state to track API availability
 
@@ -108,49 +110,48 @@ def get_video_id(video_url):
     else:
         return None
 
-def get_youtube_video_details(video_url):
-    print('invoked and working!!',video_url)
-    """Fetches YouTube video details using the YouTube Data API."""
+# def get_youtube_video_details(video_url):
+#     print('invoked and working!!',video_url)
+#     """Fetches YouTube video details using the YouTube Data API."""
 
-    # Extract video ID
-    video_id = get_video_id(video_url)
-    if not video_id:
-        return {"error": "Invalid YouTube URL"}
+#     # Extract video ID
+#     video_id = get_video_id(video_url)
+#     if not video_id:
+#         return {"error": "Invalid YouTube URL"}
 
-    # Build the YouTube API client
-    youtube = build("youtube", "v3", developerKey=api_key)
+#     # Build the YouTube API client
+#     youtube = build("youtube", "v3", developerKey=api_key)
 
-    # Call the API to get video details
-    request = youtube.videos().list(
-        part="snippet,contentDetails,statistics",
-        id=video_id
-    )
-    response = request.execute()
+#     # Call the API to get video details
+#     request = youtube.videos().list(
+#         part="snippet,contentDetails,statistics",
+#         id=video_id
+#     )
+#     response = request.execute()
 
-    if response["items"]:
-        video_details = response["items"][0]
+#     if response["items"]:
+#         video_details = response["items"][0]
         
-        title = video_details["snippet"]["title"]
-        views = video_details["statistics"]["viewCount"]
-        duration = video_details["contentDetails"]["duration"]
-        likes = video_details["statistics"].get("likeCount")  
-        dislikes = "Not available"  
+#         title = video_details["snippet"]["title"]
+#         views = video_details["statistics"]["viewCount"]
+#         duration = video_details["contentDetails"]["duration"]
+#         likes = video_details["statistics"].get("likeCount")  
 
-        return{
-            "success":True,
-            "info":{
-                "title": title,
-                "views": views,
-                "duration": duration,
-                "likes": likes if likes else "Not available",
-                "dislikes": dislikes,
-                }
-        }
+#         return{
+#             "success":True,
+#             "info":{
+#                 "title": title,
+#                 "views": views,
+#                 "duration": duration,
+#                 "likes": likes if likes else "Not available",
+#                 }
+#         }
 
-    else:
-        return {"error": "Video not found or invalid URL"}
+#     else:
+#         return {"error": "Video not found or invalid URL"}
 
 
 
 
-#print(search_videos_yt('enya only time'))
+
+

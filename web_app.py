@@ -5,7 +5,7 @@ import random
 import socketio
 from config import Config
 import asyncio
-from utils.globalDb import update_view_count,likeUnlike
+from utils.globalDb import update_view_count,likeUnlike, insert_download
 from utils.sp_handler import Search_suggestions_spotify
 from utils.userDb import delete_song_from_downloads, handle_notifications_settings
 import json
@@ -246,3 +246,48 @@ class INJUserNamespace(socketio.AsyncNamespace):
                     'message': f"An error occurred: {str(e)}",
                     'type': 'error'
                 }, room=sid)
+
+
+
+    async def on_download_progress(self, sid, data):
+        try:
+            if not isinstance(data, dict):
+                await self.emit("message", {'message': f'Invalid data format received: {data}','type':'error'}, room=sid)
+                return
+
+            progress = data.get('progress')
+            songId = data.get('songId')
+            itag = data.get('itag')
+            filename = data.get('filename')
+            thumbnail = data.get('thumbnail')
+            downloadedSize = data.get('downloadedSize')
+            userId = data.get('user_id')
+            status= data.get('status')
+            file_size = data.get('filesize'),
+            file_format = data.get('format')
+        
+
+            if not songId or not itag or not status or not userId:
+                await self.emit("message", {'message': 'No downloadId or progress provided!','type':'error'}, room=sid)
+                return
+            
+            print("updating download progress",progress, itag, filename, thumbnail, downloadedSize,file_size, userId, status)
+            
+            await insert_download(
+                user_id=userId,
+                song_id=songId,
+                file_name=filename,
+                itag=itag,
+                file_size=file_size,
+                download_status=status,
+                thumbnail=thumbnail,
+                downloaded_size=downloadedSize,
+                file_format=file_format,
+            )
+
+ 
+
+        except Exception as e:
+            print(f"Error in on_download_progress: {str(e)}")
+            if sid:
+                await self.emit("message", {'message': f"An error occurred: {str(e)}",'type':'error'}, room=sid)

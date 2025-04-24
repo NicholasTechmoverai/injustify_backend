@@ -50,6 +50,7 @@ class Download(Base):
     file_name = Column(String(255), nullable=False)
     file_format = Column(String(50), nullable=False)
     itag = Column(String(50), nullable=False)
+    downloaded_size = Column(BigInteger, nullable=False, default=0)
     file_size = Column(BigInteger, nullable=False)
     file_source = Column(String(50), nullable=False)
     download_status = Column(

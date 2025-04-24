@@ -2,49 +2,67 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Stream Card Embed</title>
+  <title>Draggable Popup</title>
   <style>
-    body {
-      margin: 0;
-      height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background-color: #f9f9f9;
-      font-family: Arial, sans-serif;
-    }
-    .card {
-      width: 400px;
-      height: 250px;
+    #popup {
+      position: absolute;
+      width: 300px;
+      top: 100px;
+      left: 100px;
       background: white;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
+      border: 2px solid #444;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      z-index: 1000;
     }
-    .card-header {
-      padding: 12px;
-      font-size: 16px;
-      font-weight: bold;
-      border-bottom: 1px solid #eee;
+
+    #popupHeader {
+      padding: 10px;
+      background: #444;
+      color: white;
+      cursor: move;
+      border-top-left-radius: 8px;
+      border-top-right-radius: 8px;
     }
-    iframe {
-      flex: 1;
-      width: 100%;
-      border: none;
+
+    #popupContent {
+      padding: 20px;
     }
   </style>
 </head>
 <body>
-  <div class="card">
-    <div class="card-header">Stream Preview</div>
-  </div>
-  <script>
-    const recognition = new webkitSpeechRecognition();
-    recognition.onresult = (e) => console.log(e.results[0][0].transcript);
-    recognition.start();
 
-  </script>
+<div id="popup">
+  <div id="popupHeader">Drag Me</div>
+  <div id="popupContent">
+    This is a draggable popup.
+  </div>
+</div>
+
+<script>
+  const popup = document.getElementById("popup");
+  const header = document.getElementById("popupHeader");
+
+  let isDragging = false;
+  let offsetX = 0, offsetY = 0;
+
+  header.addEventListener("mousedown", function(e) {
+    isDragging = true;
+    offsetX = e.clientX - popup.offsetLeft;
+    offsetY = e.clientY - popup.offsetTop;
+  });
+
+  document.addEventListener("mousemove", function(e) {
+    if (isDragging) {
+      popup.style.left = (e.clientX - offsetX) + "px";
+      popup.style.top = (e.clientY - offsetY) + "px";
+    }
+  });
+
+  document.addEventListener("mouseup", function() {
+    isDragging = false;
+  });
+</script>
+
 </body>
 </html>

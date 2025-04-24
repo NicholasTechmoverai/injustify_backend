@@ -4,10 +4,11 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import mimetypes,os
 from config import Config
-from utils.yt_handler_YTDLP import download_stream,download_and_merge
+from utils.yt_handler_YTDLP import download_stream,download_and_merge,get_playlist_songs,get_youtube_video_details
 from utils.globalDb import insert_download
 from typing import Optional
 from config import Config
+import asyncio
 
 router = APIRouter()
 mydb = Config.mydb
@@ -18,10 +19,10 @@ class DownloadRequest(BaseModel):
     songId: str
     itag: str
     filename: str
-    start_byte: int = 0
+    start_byte: Optional[int] = 0
     userId: str = None
-    size_mb: float = None
-    thumbnailUrl: str = None
+    size_mb: Optional[float] = None
+    thumbnailUrl: Optional[str] = None
     ext: str = 'mp4'
 
 @router.post("/download/yt")
@@ -56,6 +57,7 @@ async def download_video(request: Request, data: DownloadRequest):
                 thumbnail=thumbnail,
                 user_agent=request.headers.get('User-Agent'),
                 is_partial=(start_byte > 0),
+                downloaded_size=0
             )
 
             if responce.get('download_id') and responce.get('download_id') is not None:
@@ -157,3 +159,66 @@ def download_stream_local(file_path, start_byte=0):
                 yield chunk
     except Exception as e:
         print(f"Error streaming file: {e}")
+
+
+class playlistdetils (BaseModel):
+    userId: str = None
+    playlistUrl: str = None
+
+@router.post('/playlist/youtube')
+async def get_youtube_songs(request: Request, data: playlistdetils):
+    """Improved endpoint with better validation"""
+    if not data.playlistUrl:
+        raise HTTPException(status_code=400, detail="Playlist URL is required")
+
+    try:
+        # # Validate URL format
+        # if "youtube.com/playlist?" not in data.playlistUrl and "youtube.com/watch?list=" not in data.playlistUrl:
+        #     raise HTTPException(status_code=400, detail="Invalid YouTube playlist URL format")
+
+        songs = await get_playlist_songs(data.playlistUrl)
+        
+        if not songs:
+            raise HTTPException(
+                status_code=404,
+                detail="No songs found in playlist (might be private, empty, or unviewable)"
+            )
+
+        return {
+            "status": "success",
+            "count": len(songs),
+            "songs": songs
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to process playlist: {str(e)}"
+        )
+    
+
+class YTDetailsRequest(BaseModel):
+    video_urls: list[str]
+    userId:Optional[str] = None
+
+from typing import List, Optional, Dict, Union
+
+@router.post("/yt/details")
+async def get_youtube_song_details(request: Request, data: YTDetailsRequest):
+    if not data.video_urls:
+        raise HTTPException(status_code=400, detail="video_urls is required")
+
+    try:
+        # Await the batch fetch
+        songdetails: Dict[str, Union[Dict, str]] = await get_youtube_video_details(data.video_urls)
+
+        return {
+            "status": "success",
+            "count": len(songdetails),
+            "song_details": songdetails
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

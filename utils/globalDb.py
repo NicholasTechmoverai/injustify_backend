@@ -133,35 +133,121 @@ async def update_view_count(songId, userId, songPercentage):
             except Exception as e:
                 print(f"Error releasing connection: {e}")
 
-async def insert_download(user_id, song_id, file_name, file_format, itag, file_size, file_source, thumbnail, user_agent=None, is_partial=False):
-    """Async function to insert a new download into the database."""
+async def insert_download(
+    user_id, song_id, file_name=None, file_format=None, itag=None,
+    file_size=None, file_source=None, thumbnail=None,
+    user_agent=None, is_partial=False, downloaded_size=None,
+    download_status='IN_PROGRESS', **optional_updates
+):
+    """Insert or update a download record with dynamic fields."""
     try:
         conn = await Config.get_db_connection()
         if not conn:
             return {"success": False, "message": "Database connection failed"}
+        
+
+        if isinstance(file_size, (list, tuple)) and len(file_size) == 1:
+             file_size = file_size[0]
+
 
         async with conn.cursor() as cursor:
-            query = """
-                INSERT INTO downloads (user_id, song_id, file_name, file_format, itag, file_size, file_source, thumbnail, user_agent, is_partial) 
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            # Required keys
+            base_columns = ["user_id", "song_id", "itag"]
+            base_values = [user_id, song_id, itag]
+
+            insert_columns = []
+            insert_values = []
+
+            if file_name is not None:
+                insert_columns.append("file_name")
+                insert_values.append(file_name)
+
+            if file_format is not None:
+                insert_columns.append("file_format")
+                insert_values.append(file_format)
+
+            if file_size is not None:
+                insert_columns.append("file_size")
+                insert_values.append(file_size)
+
+            if file_source is not None:
+                insert_columns.append("file_source")
+                insert_values.append(file_source)
+
+            if thumbnail is not None:
+                insert_columns.append("thumbnail")
+                insert_values.append(thumbnail)
+
+            if user_agent is not None:
+                insert_columns.append("user_agent")
+                insert_values.append(user_agent)
+
+            if downloaded_size is not None:
+                insert_columns.append("downloaded_size")
+                insert_values.append(downloaded_size)
+
+            if download_status is not None:
+                insert_columns.append("download_status")
+                insert_values.append(download_status)
+
+            # Always insert is_partial
+            insert_columns.append("is_partial")
+            insert_values.append(is_partial)
+
+            # Allowed fields for update
+            allowed_updates = {
+                "file_name", "file_format", "file_size", "file_source",
+                "thumbnail", "user_agent", "downloaded_size", "is_partial", "download_status"
+            }
+
+            update_fields = []
+            update_values = []
+
+            # Add fields from optional_updates
+            for key, val in optional_updates.items():
+                if key in allowed_updates:
+                    update_fields.append(f"{key} = %s")
+                    update_values.append(val)
+
+            # Add explicitly passed fields (if not already in optional_updates)
+            for col, val in zip(insert_columns, insert_values):
+                if col in allowed_updates and col not in optional_updates:
+                    update_fields.append(f"{col} = %s")
+                    update_values.append(val)
+
+            all_columns = base_columns + insert_columns
+            placeholders = ["%s"] * len(all_columns)
+            all_values = base_values + insert_values
+
+            update_clause = ", ".join(update_fields) if update_fields else "download_status = download_status"
+
+            # DEBUG: Print the full insert and update values
+            print("DEBUG: Insert columns and values:")
+            for col, val in zip(all_columns, all_values):
+                print(f"  {col}: {val}")
+
+            print("DEBUG: Update fields and values:")
+            for field, val in zip(update_fields, update_values):
+                print(f"  {field}: {val}")
+
+            query = f"""
+                INSERT INTO downloads ({", ".join(all_columns)})
+                VALUES ({", ".join(placeholders)})
+                ON DUPLICATE KEY UPDATE {update_clause}
             """
-            values = (user_id, song_id, file_name, file_format, itag, file_size, file_source, thumbnail, user_agent, is_partial)
-            await cursor.execute(query, values)
+
+            await cursor.execute(query, all_values + update_values)
             await conn.commit()
 
-            return {"success": True, "download_id": cursor.lastrowid}
+            return {"success": True, "message": "Inserted or updated download"}
 
     except Exception as e:
-        print(f"Error inserting download: {e}")
+        print(f"Error inserting/updating download: {e}")
         return {"success": False, "message": str(e)}
 
     finally:
         if conn:
-            await Config.pool.release(conn)  
-
-
-
-
+            await Config.pool.release(conn)
 
 
 

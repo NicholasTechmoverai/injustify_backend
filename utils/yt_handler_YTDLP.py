@@ -6,6 +6,14 @@ import threading
 from queue import Queue
 import urllib.parse
 import aiohttp
+import asyncio
+import tempfile
+import os
+import ffmpeg
+from ffmpeg import Error as FFmpegError
+from typing import List, Dict, Union
+from datetime import datetime
+from yt_dlp import YoutubeDL
 
 
 # async def fetch_streams(link):
@@ -301,13 +309,6 @@ async def download_stream(url, itag, start_byte=0):
 
 
 
-import aiohttp
-import asyncio
-import tempfile
-import os
-import ffmpeg
-import yt_dlp
-from ffmpeg import Error as FFmpegError
 
 async def download_file(url, file_path, total_size=None):
  
@@ -412,3 +413,110 @@ async def download_and_merge(url, video_itag, audio_itag):
         print(f"Error during download and merge: {str(e)}")
         yield b"Error: " + str(e).encode()
         
+
+
+
+
+
+async def get_playlist_songs(playlist_url: str) -> List[Dict[str, str]]:
+    """Improved playlist extractor with better error handling"""
+    loop = asyncio.get_running_loop()
+
+    def fetch_info():
+        ydl_opts = {
+            'extract_flat': 'in_playlist',
+            'quiet': True,
+            'no_warnings': False,
+            'ignoreerrors': True,
+            'extractor_args': {
+                'youtube': {
+                    'skip': ['dash', 'hls'],
+                    'player_client': ['web', 'android'],
+                    'player_skip': ['configs'],
+                }
+            }
+        }
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(playlist_url, download=False)
+                if not info:
+                    raise ValueError("Could not extract playlist information")
+                return info
+        except Exception as e:
+            raise RuntimeError(f"Failed to fetch playlist: {str(e)}")
+
+    try:
+        result = await loop.run_in_executor(None, fetch_info)
+        
+        if not result or 'entries' not in result:
+            return []
+
+        songs = []
+        for entry in result['entries']:
+            if not entry:  # Skip None entries
+                continue
+            songs.append({
+                'title': entry.get('title', 'Untitled'),
+                'url': entry.get('url'),
+                'id': entry.get('id')
+            })
+        return songs
+
+    except Exception as e:
+        return e
+
+
+
+# async def main():
+#     playlist_url = input("Enter the playlist URL: ")
+#     songs = await get_playlist_songs(playlist_url)
+#     for song in songs:
+#         print(f"{song['title']} - {song['url']}")
+
+# asyncio.run(main())
+
+def extract_video_info(url: str) -> Dict[str, Union[str, Dict]]:
+    """Runs yt-dlp sync inside thread for 1 URL."""
+    try:
+        ydl_opts = {
+            "quiet": True,
+            "skip_download": True,
+        }
+
+        with YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=False)
+
+        return {
+            info["id"]: {
+                "views": str(info.get("view_count", "?")),
+                "duration": str(info.get("duration", "?")),
+                "likes": str(info.get("like_count", "?")),
+                "publishedAt": format_yt_date(info.get("upload_date", "Unknown")),
+                # "title": info.get("title", "?"),  # Uncomment if needed
+            }
+        }
+    except Exception as e:
+        return {"error": f"yt-dlp failed: {str(e)}"}
+
+
+async def get_youtube_video_details(video_urls: List[str]) -> Dict[str, Union[Dict, str]]:
+    """Fetch YouTube video details in parallel using yt-dlp."""
+    tasks = [asyncio.to_thread(extract_video_info, url) for url in video_urls]
+    results = await asyncio.gather(*tasks)
+
+    merged = {}
+    for result in results:
+        merged.update(result)
+    return merged
+
+
+
+def format_yt_date(upload_date: str) -> str:
+    try:
+        # Parse from "YYYYMMDD" format
+        dt = datetime.strptime(upload_date, "%Y%m%d")
+        # Format to "YYYY-MM-DD HH:MM:SS"
+        return dt.strftime("%Y-%m-%d %H:%M:%S")
+    except Exception:
+        return "Unknown"
+      
