@@ -519,4 +519,5 @@ def format_yt_date(upload_date: str) -> str:
         return dt.strftime("%Y-%m-%d %H:%M:%S")
     except Exception:
         return "Unknown"
-      
+
+

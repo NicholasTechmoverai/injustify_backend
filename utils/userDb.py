@@ -200,6 +200,7 @@ async def fetch_downloads(
                 'song_id': result[2],
                 'itag':result[5],
                 'file_source':result[7],
+                'file_format':result[4],
                 'filesize': result[6],
                 'filename': result[3],
                 'thumbnail': result[14] if 'injustify' not in result[7] else f"{Config.thumbnailPath}/{result[14]}",

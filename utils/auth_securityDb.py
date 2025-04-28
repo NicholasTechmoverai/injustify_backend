@@ -32,6 +32,10 @@ async def check_token_existency(email):
     except Exception as e:
         logging.error(f"Error checking token: {e}")
         return False 
+    
+    finally:
+        if conn:
+            await Config.pool.release(conn)  
 
 async def set_token(email, token):
     try:
@@ -96,3 +100,64 @@ async def validate_token(email, token, delete=False):
     except Exception as e:
         logging.error(f"Error during token validation: {e}")
         return {"valid": False, "message": "An error occurred during validation. Please try again later."}
+
+    finally:
+        if conn:
+            await Config.pool.release(conn)  
+
+async def extract_tracking_info(dev_info: dict, device: str):
+    tracking_info = {
+        "ip": dev_info.get("ip", "Unknown IP"),
+        "continent": dev_info.get("continent", "Unknown Continent"),
+        "country": dev_info.get("country", "Unknown Country"),
+        "region": dev_info.get("region", "Unknown Region"),
+        "city": dev_info.get("city", "Unknown City"),
+        "latitude": dev_info.get("latitude", 0.0),
+        "longitude": dev_info.get("longitude", 0.0),
+        "timezone": dev_info.get("timezone", {}).get("id", "Unknown Timezone"),
+        "local_time": dev_info.get("timezone", {}).get("current_time", datetime.utcnow().isoformat()),
+        "isp_org": dev_info.get("connection", {}).get("org", "Unknown Org"),
+        "isp_name": dev_info.get("connection", {}).get("isp", "Unknown ISP"),
+        "flag_emoji": dev_info.get("flag", {}).get("emoji", "🏳️"),
+        "device": device
+    }
+
+    conn = await Config.get_db_connection()
+
+    if not conn:
+        print("Database connection failed")
+        return
+
+    query = """
+        INSERT INTO visitor_tracking (
+            ip, continent, country, region, city, latitude, longitude,
+            timezone, local_time, isp_org, isp_name, flag_emoji, device
+        )
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """
+
+    values = (
+        tracking_info["ip"],
+        tracking_info["continent"],
+        tracking_info["country"],
+        tracking_info["region"],
+        tracking_info["city"],
+        tracking_info["latitude"],
+        tracking_info["longitude"],
+        tracking_info["timezone"],
+        tracking_info["local_time"],
+        tracking_info["isp_org"],
+        tracking_info["isp_name"],
+        tracking_info["flag_emoji"],
+        tracking_info["device"]
+    )
+
+    try:
+        async with conn.cursor() as cursor:
+            await cursor.execute(query, values)
+            await conn.commit()
+    except Exception as e:
+        print(f"Failed to insert tracking info: {e}")
+    finally:
+        if conn:
+            await Config.pool.release(conn)  

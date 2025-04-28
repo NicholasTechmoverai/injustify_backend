@@ -6,6 +6,7 @@ import mimetypes,os
 from config import Config
 from utils.yt_handler_YTDLP import download_stream,download_and_merge,get_playlist_songs,get_youtube_video_details
 from utils.globalDb import insert_download
+from utils.auth_securityDb import extract_tracking_info
 from typing import Optional
 from config import Config
 import asyncio
@@ -222,3 +223,23 @@ async def get_youtube_song_details(request: Request, data: YTDetailsRequest):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+
+
+
+class TrackInfo(BaseModel):
+    dvc: Optional[str] = None
+    dev_info: Optional[dict] = None
+
+@router.post("/fadfafref")
+async def track(request: Request, data: TrackInfo):
+    dev_info = data.dev_info
+    device = data.dvc
+
+    try:
+        if not device or device == 'null' or device is None:
+            device = request.headers.get('user-agent')  # Correct way to get user agent
+
+        await extract_tracking_info(dev_info, device)
+    except Exception as err:
+        print(err)

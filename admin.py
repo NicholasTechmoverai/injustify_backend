@@ -33,6 +33,27 @@ class AdminUser(Base):
     password_hash = Column(String(200))
     is_superadmin = Column(Boolean)
     
+class VisitorTracking(Base):
+    __tablename__ = "visitor_tracking"
+
+    id = Column(BigInteger, primary_key=True, autoincrement=True)
+
+    ip = Column(String(45), nullable=False)
+    continent = Column(String(100), nullable=True)
+    country = Column(String(100), nullable=True)
+    region = Column(String(100), nullable=True)
+    city = Column(String(100), nullable=True)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+    timezone = Column(String(100), nullable=True)
+    local_time = Column(String(100), nullable=True)
+    isp_org = Column(String(255), nullable=True)
+    isp_name = Column(String(255), nullable=True)
+    flag_emoji = Column(String(10), nullable=True)
+    device = Column(String(255), nullable=True)
+    created_at = Column(TIMESTAMP, server_default="CURRENT_TIMESTAMP", onupdate="CURRENT_TIMESTAMP")
+
+
 class View(Base):
     __tablename__ = "views"
     id = Column(Integer, primary_key=True, index=True)
@@ -215,6 +236,13 @@ def get_current_user(request: Request):
 # admin = Admin(app, engine, title="Injustify Admin", logo_url="/static/logo.png",authentication_backend=AdminAuth(432413))
 admin = Admin(app, engine, title="Injustify Admin", logo_url="/static/injustify.png")
 
+
+class VisitorTrackingView(ModelView, model=VisitorTracking):
+    column_list =  [VisitorTracking.ip,VisitorTracking.device,VisitorTracking.continent,VisitorTracking.country,VisitorTracking.city]
+    column_sortable_list = [VisitorTracking.created_at, VisitorTracking.device, VisitorTracking.ip]
+    column_default_sort = (VisitorTracking.created_at, True)
+    category = "users"
+
 # -------------------- Admin Views --------------------
 class AdminUserView(ModelView, model=AdminUser):
     column_list = [AdminUser.id, AdminUser.username, AdminUser.is_superadmin]
@@ -292,6 +320,7 @@ class NotificationSettingView(ModelView, model=NotificationSetting):
 
 # -------------------- Register Views --------------------
 admin.add_view(AdminUserView)
+admin.add_view(VisitorTrackingView)
 admin.add_view(ViewModelView)
 admin.add_view(DownloadModelView)
 admin.add_view(InjustifyUserView)
