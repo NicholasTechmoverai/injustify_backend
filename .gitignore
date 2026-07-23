@@ -1,4 +1,32 @@
-static
-backend/.env
+# Environments
 .env
-.venv
+.env.*
+.venv/
+venv/
+env/
+
+# Python cache / compiles
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Local Databases
+*.sqlite
+*.sqlite3
+*.db
+
+# Media and Uploads (except the admin UI dashboard itself)
+static/songs/
+static/thumbnails/
+static/uploads/
+
+# Root media files
+*.mp3
+*.png
+*.jpg
+*.jpeg
+*.gif
+
+# Cache
+.cache
+
