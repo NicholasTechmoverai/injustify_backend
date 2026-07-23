@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Injustify | Enterprise Administration Platform</title>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="/static/admin/css/admin.css">
+</head>
+<body>
+
+  <!-- Login Modal Overlay -->
+  <div id="login-overlay" style="display: flex;">
+    <div class="login-card">
+      <div class="login-brand">
+        <div class="logo-badge" style="margin: 0 auto 1rem auto; width: 48px; height: 48px; font-size: 1.5rem;">IJ</div>
+        <h1>Injustify Admin</h1>
+        <p>Enterprise FinTech Management Portal</p>
+      </div>
+      <form id="login-form">
+        <div class="form-group">
+          <label class="form-label" for="login-username">Administrator Username</label>
+          <input type="text" id="login-username" class="form-control" placeholder="admin" required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="login-password">Password</label>
+          <input type="password" id="login-password" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+          <i class="fas fa-lock"></i> Authenticate & Login
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div id="app-root" style="display: none;">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-badge">IJ</div>
+        <div>
+          <div class="sidebar-title">Injustify</div>
+          <div style="font-size: 0.72rem; color: var(--gold-primary); font-weight: 600;">ENTERPRISE ADMIN</div>
+        </div>
+      </div>
+      <ul class="nav-list">
+        <li class="nav-item active" data-view="dashboard">
+          <i class="fas fa-chart-pie" style="width: 20px;"></i> Dashboard
+        </li>
+        <li class="nav-item" data-view="users">
+          <i class="fas fa-users" style="width: 20px;"></i> User Management
+        </li>
+        <li class="nav-item" data-view="monitoring">
+          <i class="fas fa-server" style="width: 20px;"></i> System Monitoring
+        </li>
+        <li class="nav-item" data-view="logs">
+          <i class="fas fa-shield-halved" style="width: 20px;"></i> Logs & Audit Center
+        </li>
+        <li class="nav-item" data-view="config">
+          <i class="fas fa-sliders" style="width: 20px;"></i> System Config
+        </li>
+        <li class="nav-item" data-view="support">
+          <i class="fas fa-headset" style="width: 20px;"></i> Support Center
+        </li>
+      </ul>
+      <div class="sidebar-footer">
+        <div class="admin-user-info">
+          <div class="avatar" id="admin-avatar-initials">AD</div>
+          <div>
+            <div id="admin-user-name" style="font-weight: 600; font-size: 0.85rem;">Admin User</div>
+            <div id="admin-user-role" style="font-size: 0.72rem; color: var(--text-muted);">SuperAdmin</div>
+          </div>
+        </div>
+        <button id="logout-btn" class="btn btn-secondary btn-sm" title="Sign Out">
+          <i class="fas fa-sign-out-alt"></i>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-wrapper">
+      <header class="topbar">
+        <h2 class="page-title" id="view-title">Dashboard Overview</h2>
+        <div class="topbar-actions">
+          <div class="status-badge" id="system-health-badge">
+            <span class="dot"></span> <span id="health-text">System Operational</span>
+          </div>
+          <button id="refresh-btn" class="btn btn-secondary btn-sm" title="Refresh Metrics">
+            <i class="fas fa-arrows-rotate"></i> Refresh
+          </button>
+        </div>
+      </header>
+
+      <div class="content-area">
+        <!-- Security Boundary Notice -->
+        <div class="security-banner">
+          <i class="fas fa-user-shield" style="font-size: 1.1rem;"></i>
+          <span><strong>FinTech Security Boundaries Enforced:</strong> Administrators cannot view user OAuth tokens, raw Deriv credentials, or execute trades on behalf of platform users. All actions are recorded to audit logs.</span>
+        </div>
+
+        <!-- 1. DASHBOARD VIEW -->
+        <section id="view-dashboard" class="app-view">
+          <div class="grid-4">
+            <div class="stat-card">
+              <div class="stat-header">
+                <span>Active Users</span>
+                <div class="stat-icon"><i class="fas fa-users"></i></div>
+              </div>
+              <div class="stat-value" id="stat-active-users">--</div>
+              <div class="stat-footer">Total platform accounts</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-header">
+                <span>Deriv Connected Accounts</span>
+                <div class="stat-icon" style="background: var(--gold-glow); color: var(--gold-primary);"><i class="fas fa-link"></i></div>
+              </div>
+              <div class="stat-value" id="stat-deriv-accounts">--</div>
+              <div class="stat-footer"><span id="stat-deriv-demo">0</span> Demo / <span id="stat-deriv-real">0</span> Real</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-header">
+                <span>Active WebSockets</span>
+                <div class="stat-icon"><i class="fas fa-plug"></i></div>
+              </div>
+              <div class="stat-value" id="stat-sockets">--</div>
+              <div class="stat-footer">Live Socket.IO sessions</div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-header">
+                <span>Avg API Latency</span>
+                <div class="stat-icon" style="background: rgba(16,185,129,0.15); color: var(--emerald-success);"><i class="fas fa-bolt"></i></div>
+              </div>
+              <div class="stat-value" id="stat-api-latency">-- ms</div>
+              <div class="stat-footer">99.8% uptime rate</div>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <!-- System Resources -->
+            <div class="panel-card">
+              <div class="panel-header">
+                <h3 class="panel-title"><i class="fas fa-microchip"></i> System Resource Usage</h3>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <div>
+                  <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 0.35rem;">
+                    <span>CPU Load</span>
+                    <strong id="cpu-text">--%</strong>
+                  </div>
+                  <div style="height: 8px; background: #0F172A; border-radius: 4px; overflow: hidden;">
+                    <div id="cpu-bar" style="height: 100%; width: 0%; background: var(--blue-primary); transition: width 0.5s;"></div>
+                  </div>
+                </div>
+                <div>
+                  <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 0.35rem;">
+                    <span>Memory Usage</span>
+                    <strong id="mem-text">-- GB</strong>
+                  </div>
+                  <div style="height: 8px; background: #0F172A; border-radius: 4px; overflow: hidden;">
+                    <div id="mem-bar" style="height: 100%; width: 0%; background: var(--gold-primary); transition: width 0.5s;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Recent Activity Log -->
+            <div class="panel-card">
+              <div class="panel-header">
+                <h3 class="panel-title"><i class="fas fa-list-check"></i> Recent Platform Activity</h3>
+              </div>
+              <div class="table-container">
+                <table class="custom-table">
+                  <thead>
+                    <tr>
+                      <th>Actor</th>
+                      <th>Action</th>
+                      <th>Category</th>
+                      <th>Timestamp</th>
+                    </tr>
+                  </thead>
+                  <tbody id="activity-feed-body">
+                    <tr><td colspan="4" style="text-align: center;">Loading activity...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. USER MANAGEMENT VIEW -->
+        <section id="view-users" class="app-view" style="display: none;">
+          <div class="panel-card">
+            <div class="panel-header">
+              <h3 class="panel-title"><i class="fas fa-user-gear"></i> Registered Platform Users</h3>
+              <div style="display: flex; gap: 0.75rem;">
+                <input type="text" id="user-search-input" class="form-control" placeholder="Search by name or email..." style="width: 250px;">
+                <select id="user-status-filter" class="form-control" style="width: 140px;">
+                  <option value="">All Statuses</option>
+                  <option value="active">Active</option>
+                  <option value="suspended">Suspended</option>
+                </select>
+                <button id="user-search-btn" class="btn btn-primary btn-sm"><i class="fas fa-search"></i> Search</button>
+              </div>
+            </div>
+
+            <div class="table-container">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>User</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Registered</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="users-table-body">
+                  <tr><td colspan="6" style="text-align: center;">Loading users...</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+              <span id="user-pagination-info" style="font-size: 0.85rem; color: var(--text-muted);">Showing 1 to 10 of 10 users</span>
+              <div style="display: flex; gap: 0.5rem;">
+                <button id="user-prev-btn" class="btn btn-secondary btn-sm" disabled>Previous</button>
+                <button id="user-next-btn" class="btn btn-secondary btn-sm" disabled>Next</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. SYSTEM MONITORING VIEW -->
+        <section id="view-monitoring" class="app-view" style="display: none;">
+          <div class="panel-card">
+            <div class="panel-header">
+              <h3 class="panel-title"><i class="fas fa-heart-pulse"></i> Infrastructure & Connectivity Status</h3>
+            </div>
+            <div class="table-container">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>Service Component</th>
+                    <th>Status</th>
+                    <th>Latency</th>
+                    <th>Diagnostics & Details</th>
+                  </tr>
+                </thead>
+                <tbody id="monitoring-table-body">
+                  <tr><td colspan="4" style="text-align: center;">Checking infrastructure health...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. LOGS & AUDIT CENTER VIEW -->
+        <section id="view-logs" class="app-view" style="display: none;">
+          <div class="panel-card">
+            <div class="panel-header">
+              <div style="display: flex; gap: 0.5rem;" id="log-type-tabs">
+                <button class="btn btn-secondary btn-sm active" data-logtype="audit">Audit Log</button>
+                <button class="btn btn-secondary btn-sm" data-logtype="auth">Auth Events</button>
+                <button class="btn btn-secondary btn-sm" data-logtype="api">API Metrics</button>
+                <button class="btn btn-secondary btn-sm" data-logtype="security">Security Alerts</button>
+              </div>
+              <div style="display: flex; gap: 0.75rem;">
+                <button id="export-csv-btn" class="btn btn-secondary btn-sm"><i class="fas fa-file-csv"></i> Export CSV</button>
+                <button id="export-json-btn" class="btn btn-secondary btn-sm"><i class="fas fa-file-code"></i> Export JSON</button>
+              </div>
+            </div>
+
+            <div class="table-container">
+              <table class="custom-table">
+                <thead>
+                  <tr id="logs-table-head">
+                    <th>ID</th><th>Actor</th><th>Action</th><th>Category</th><th>Details</th><th>Timestamp</th>
+                  </tr>
+                </thead>
+                <tbody id="logs-table-body">
+                  <tr><td colspan="6" style="text-align: center;">Loading logs...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- 5. CONFIGURATION VIEW -->
+        <section id="view-config" class="app-view" style="display: none;">
+          <div class="grid-2">
+            <div class="panel-card">
+              <div class="panel-header">
+                <h3 class="panel-title"><i class="fas fa-toggle-on"></i> Feature Flags & Maintenance</h3>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; background: #0F172A; padding: 1rem; border-radius: var(--radius-sm);">
+                  <div>
+                    <strong style="color: var(--gold-primary);">Maintenance Mode</strong>
+                    <p style="font-size: 0.78rem; color: var(--text-muted);">Restricts platform access for non-admin users during maintenance.</p>
+                  </div>
+                  <button id="toggle-maintenance-btn" class="btn btn-secondary btn-sm">Toggle Off</button>
+                </div>
+                <div id="feature-flags-list" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                  <!-- Dynamically populated -->
+                </div>
+              </div>
+            </div>
+
+            <div class="panel-card">
+              <div class="panel-header">
+                <h3 class="panel-title"><i class="fas fa-circle-info"></i> Environment Diagnostics</h3>
+              </div>
+              <div class="table-container">
+                <table class="custom-table">
+                  <tbody id="config-diag-body">
+                    <tr><td>Backend Server</td><td id="diag-backend">--</td></tr>
+                    <tr><td>Frontend Server</td><td id="diag-frontend">--</td></tr>
+                    <tr><td>Deriv WS Endpoint</td><td id="diag-deriv">--</td></tr>
+                    <tr><td>Database Driver</td><td id="diag-db">--</td></tr>
+                    <tr><td>JWT Token Expiry</td><td id="diag-jwt">--</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 6. SUPPORT CENTER VIEW -->
+        <section id="view-support" class="app-view" style="display: none;">
+          <div class="panel-card">
+            <div class="panel-header">
+              <h3 class="panel-title"><i class="fas fa-headset"></i> User Support Requests</h3>
+              <button id="create-ticket-btn" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> New Ticket</button>
+            </div>
+            <div class="table-container">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>Ticket No</th>
+                    <th>User Email</th>
+                    <th>Subject</th>
+                    <th>Category</th>
+                    <th>Priority</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="tickets-table-body">
+                  <tr><td colspan="7" style="text-align: center;">Loading tickets...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- User Details Drawer Modal -->
+  <div id="user-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modal-user-name">User Profile Details</h3>
+        <button class="btn btn-secondary btn-sm close-modal-btn"><i class="fas fa-times"></i></button>
+      </div>
+      <div id="modal-user-body" style="font-size: 0.875rem;">
+        Loading details...
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toast-container"></div>
+
+  <script src="/static/admin/js/admin.js"></script>
+</body>
+</html>
