@@ -16,10 +16,10 @@ Frontend_server = Config.FRONTEND_SERVER
 # Load environment variables
 load_dotenv()
 
-EMAIL = os.getenv("EMAIL")
-PASSWORD = os.getenv("EMAIL_PASSWORD")
-SMTP_SERVER = os.getenv("SMTP_SERVER")
-SMTP_PORT = int(os.getenv("SMTP_PORT"))
+EMAIL = os.getenv("EMAIL", "admin@injustify.com")
+PASSWORD = os.getenv("EMAIL_PASSWORD", "secret_pass")
+SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 
 
 async def generate_random_code(length=6):

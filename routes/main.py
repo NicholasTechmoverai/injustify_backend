@@ -27,15 +27,12 @@ from config import Config
 
 load_dotenv()
 
-EMAIL = os.getenv("EMAIL")
-PASSWORD = os.getenv("EMAIL_PASSWORD")
-SMTP_SERVER = os.getenv("SMTP_SERVER")
-SMTP_PORT = int(os.getenv("SMTP_PORT"))
-MY_ID = os.getenv("MY_ID")
-MY_SECRET = os.getenv("MY_SECRET")
-
-if not MY_ID or not MY_SECRET:
-    raise ValueError("Google OAuth credentials (MY_ID and MY_SECRET) must be set in the environment variables.")
+EMAIL = os.getenv("EMAIL", "admin@injustify.com")
+PASSWORD = os.getenv("EMAIL_PASSWORD", "secret_pass")
+SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+MY_ID = os.getenv("MY_ID", "mock_google_client_id.apps.googleusercontent.com")
+MY_SECRET = os.getenv("MY_SECRET", "mock_google_client_secret")
 
 # OAuth Configuration
 oauth = OAuth(StarletteConfig())
