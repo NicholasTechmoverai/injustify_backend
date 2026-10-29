@@ -5,7 +5,7 @@ from urllib.parse import urlparse, parse_qs
 from googleapiclient.discovery import build
 
 
-api_key = "AIzaSyDpXuyDtcaTNsYeJeng3Se8V5tI73UO8dQ"
+api_key = ""
 
 
 def get_video_id(video_url):
